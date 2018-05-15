@@ -4,31 +4,29 @@ from west.propagators import WESTPropagator
 from west.systems import WESTSystem
 from westpa.binning import RectilinearBinMapper, VoronoiBinMapper
 from scipy.spatial.distance import cdist
-
-PI = numpy.pi
 from numpy import sin, cos, exp
 from numpy.random import normal as random_normal
 import numpy as np
 
+PI = numpy.pi
 pcoord_len = 21
-pcoord_dtype = np.float32    
+pcoord_dtype = np.float32
+
 
 def dfunc(p, centers):
-    #print("Dfunc called")
-    #print(p, centers)
-    #print(p.shape, centers.shape)
-    ds = cdist(np.array([p]),centers)
+    ds = cdist(np.array([p]), centers)
     return np.array(ds[0], dtype=p.dtype)
+
 
 class ODLDPropagator(WESTPropagator):
     def __init__(self, rc=None):
-        super(ODLDPropagator,self).__init__(rc)
-        
+        super(ODLDPropagator, self).__init__(rc)
+
         self.coord_len = pcoord_len
         self.coord_dtype = pcoord_dtype
         self.coord_ndim = 2
         
-        self.initial_pcoord = np.array([2.0,2.0], dtype=self.coord_dtype)
+        self.initial_pcoord = np.array([2.0, 2.0], dtype=self.coord_dtype)
         
         self.sigma = 0.1
         
@@ -42,7 +40,6 @@ class ODLDPropagator(WESTPropagator):
         # (or None, for no reflection)
         self.reflect_at_1 = 10.0
         self.reflect_at_2 = 0.0
-        #self.reflect_at = None
 
     def get_pcoord(self, state):
         '''Get the progress coordinate of the given basis or initial state.'''
@@ -78,7 +75,8 @@ class ODLDPropagator(WESTPropagator):
         
         n_segs = len(segments)
     
-        coords = np.empty((n_segs, self.coord_len, self.coord_ndim), dtype=self.coord_dtype)
+        coords = np.empty((n_segs, self.coord_len, self.coord_ndim),
+                          dtype=self.coord_dtype)
         
         for iseg, segment in enumerate(segments):
             coords[iseg,:] = segment.pcoord[:]
@@ -86,11 +84,13 @@ class ODLDPropagator(WESTPropagator):
         coord_len = self.coord_len
         reflect_at_1 = self.reflect_at_1
         reflect_at_2 = self.reflect_at_2
-        all_displacements = np.zeros((n_segs, self.coord_len, self.coord_ndim), dtype=self.coord_dtype)
+        all_displacements = np.zeros((n_segs, self.coord_len, self.coord_ndim),
+                                     dtype=self.coord_dtype)
         for istep in xrange(1,coord_len):
             x = coords[:,istep-1,:]
            
-            all_displacements[:,istep,:] = displacements = random_normal(scale=sig, size=(n_segs,self.coord_ndim))
+            all_displacements[:,istep,:] = displacements = \
+                random_normal(scale=sig, size=(n_segs,self.coord_ndim))
             # We have 3 wells
             mod_x = (cos45*x[:,0]+sin45*x[:,1])
             mod_y = (cos45*x[:,0]-sin45*x[:,1])
@@ -102,12 +102,7 @@ class ODLDPropagator(WESTPropagator):
                      self.grad_y(well_3[0], well_3[3], well_3[4],  well_3[1], well_3[2], mod_x, mod_y)
             grad = np.array([grad_x,grad_y]).T
             
-            #print("x : ", x)
-            #print("gf: ", gradfactor)
-            #print("g: ", grad)
-            #print("disp: ", displacements)
             newx = x - gradfactor*grad + displacements
-            #print("newxs: ", newx)
             if reflect_at_1 is not None:
                 # Anything that has moved beyond reflect_at must move back that much
                 
@@ -136,6 +131,7 @@ class ODLDPropagator(WESTPropagator):
             segment.status = segment.SEG_STATUS_COMPLETE
     
         return segments
+
 
 class ODLDSystem(WESTSystem):
     def initialize(self):
